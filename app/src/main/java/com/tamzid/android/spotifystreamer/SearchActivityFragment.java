@@ -1,20 +1,23 @@
 package com.tamzid.android.spotifystreamer;
 
+import android.app.Activity;
+import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.support.v4.app.Fragment;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -47,6 +50,12 @@ public class SearchActivityFragment extends Fragment {
     private ListView mListView;
     private SpotifyWrapperArtistAdapter mArtistAdapter;
     private List<Artist> mArtists = new ArrayList<>();
+
+    private OnArtistSelectedListener mListener;
+
+    public interface OnArtistSelectedListener {
+        public void onArtistSelected(String artistName, String artistId);
+    }
 
     private Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
@@ -85,29 +94,45 @@ public class SearchActivityFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public void onResume() {
+        super.onResume();
+        if (((AppCompatActivity)getActivity()).getSupportActionBar() != null) {
+            ((AppCompatActivity)getActivity()).getSupportActionBar().setTitle(R.string.app_name);
+            ((AppCompatActivity)getActivity()).getSupportActionBar().setSubtitle(null);
+        }
+    }
+
+    @Override
+    public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_search, container, false);
 
-        EditText artistSearchEditText = (EditText) v.findViewById(R.id.artist_search_edittext);
-        artistSearchEditText.addTextChangedListener(new TextWatcher() {
+        final EditText artistSearchEditText = (EditText) v.findViewById(R.id.artist_search_edittext);
+        artistSearchEditText.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        artistSearchEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (event == null) {
+                    if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                        searchArtist(v.getText().toString());
+                        artistSearchEditText.clearFocus();
+                        InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+                        inputMethodManager.hideSoftInputFromWindow(v.getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+                    } else {
+                        return false;
+                    }
+                }
 
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                searchArtist(s.toString());
+                return true;
             }
         });
 
         mListView = (ListView) v.findViewById(R.id.artist_results_listview);
-        //mListView.setOnItemClickListener();
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                selectArtist(mArtistAdapter.getItem(position).name, mArtistAdapter.getItem(position).id);
+            }
+        });
 
         return v;
     }
@@ -118,7 +143,7 @@ public class SearchActivityFragment extends Fragment {
         spotifyService.searchArtists(artistQuery, new SpotifyCallback<ArtistsPager>() {
             @Override
             public void failure(SpotifyError spotifyError) {
-                Log.v(LOG_TAG, "Failure");
+                Log.v(LOG_TAG, "Failed to get Artists");
             }
 
             @Override
@@ -131,14 +156,11 @@ public class SearchActivityFragment extends Fragment {
         });
     }
 
-    private AdapterView.OnItemClickListener mOpenTop10Listener = new AdapterView.OnItemClickListener() {
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            String artistName = mArtistAdapter.getItem(position).id;
-
+    private void selectArtist(String artistName, String artistId) {
+        if (mListener != null) {
+            mListener.onArtistSelected(artistName, artistId);
         }
-    };
-
+    }
 
     private class SpotifyWrapperArtistAdapter extends ArrayAdapter<Artist> {
         public SpotifyWrapperArtistAdapter(Context context, int textViewResourceId) {
@@ -175,6 +197,22 @@ public class SearchActivityFragment extends Fragment {
 
             return convertView;
         }
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        try {
+            mListener = (OnArtistSelectedListener) activity;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(activity.toString() + " must implement OnArtistSelectedListener");
+        }
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mListener = null;
     }
 
 }

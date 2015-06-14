@@ -8,8 +8,8 @@
 
     <ImageView
         android:id="@+id/artist_image_imageview"
-        android:layout_width="@dimen/artist_thumbnail_size"
-        android:layout_height="@dimen/artist_thumbnail_size"
+        android:layout_width="@dimen/results_thumbnail_size"
+        android:layout_height="@dimen/results_thumbnail_size"
         tools:src="@drawable/abc_ic_clear_mtrl_alpha"/>
 
     <TextView

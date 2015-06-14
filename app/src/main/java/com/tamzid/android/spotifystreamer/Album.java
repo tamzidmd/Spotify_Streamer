@@ -10,5 +10,5 @@ import java.util.List;
 public class Album extends ArtistModel {
     public String albumName;
     public Bitmap albumArt;
-    public List<Track> albumTracks;
+    public List<TrackModel> mAlbumTrackModels;
 }
