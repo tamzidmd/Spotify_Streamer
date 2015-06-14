@@ -91,6 +91,7 @@ public class SearchActivityFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        setRetainInstance(true);
     }
 
     @Override
@@ -133,6 +134,11 @@ public class SearchActivityFragment extends Fragment {
                 selectArtist(mArtistAdapter.getItem(position).name, mArtistAdapter.getItem(position).id);
             }
         });
+
+        if (!mArtists.isEmpty()) {
+            mArtistAdapter = new SpotifyWrapperArtistAdapter(getActivity(), R.layout.artist_item, mArtists);
+            mListView.setAdapter(mArtistAdapter);
+        }
 
         return v;
     }

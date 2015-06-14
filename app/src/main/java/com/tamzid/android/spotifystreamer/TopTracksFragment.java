@@ -64,7 +64,7 @@ public class TopTracksFragment extends Fragment {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case RETRIEVED_TRACKS:
-                    mTopTracksAdapter = new SpotifyWrapperTopTracksAdapter(getActivity(), R.layout.track_item, mTracks);
+                    mTopTracksAdapter = new SpotifyWrapperTopTracksAdapter(getActivity(), R.layout.track_item, (List<Track>) msg.obj);
                     mListView.setAdapter(mTopTracksAdapter);
                     break;
                 default:
