@@ -93,6 +93,7 @@ public class TopTracksFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+        setRetainInstance(true);
         if (getArguments() != null) {
             mArtistName = getArguments().getString(ARG_ARTIST_NAME);
             mArtistId = getArguments().getString(ARG_ARTIST_ID);
@@ -115,6 +116,11 @@ public class TopTracksFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_top_tracks, container, false);
 
         mListView = (ListView) v.findViewById(R.id.track_results_listview);
+
+        if (!mTracks.isEmpty()) {
+            mTopTracksAdapter = new SpotifyWrapperTopTracksAdapter(getActivity(), R.layout.track_item, mTracks);
+            mListView.setAdapter(mTopTracksAdapter);
+        }
 
         return v;
     }
@@ -177,9 +183,9 @@ public class TopTracksFragment extends Fragment {
                 // get one before that to avoid making too many calculations searching for the perfect
                 // size, but still better than downloading the largest images.
                 int smallestImage = track.album.images.size() - 2;
-                Picasso.with(getContext()).load(track.album.images.get(smallestImage).url).placeholder(R.drawable.boom).error(R.drawable.boom).into(albumImage);
+                Picasso.with(getContext()).load(track.album.images.get(smallestImage).url).placeholder(R.drawable.loading_image).error(R.drawable.no_image_available).into(albumImage);
             } else {
-                Picasso.with(getContext()).load(R.drawable.boom).into(albumImage);
+                Picasso.with(getContext()).load(R.drawable.no_image_available).into(albumImage);
             }
 
             return convertView;

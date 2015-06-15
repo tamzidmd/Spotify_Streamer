@@ -7,4 +7,5 @@
 <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="top_tracks_title">Top 10 Tracks</string>
+    <string name="empty_search_list">Search for your favourite artist!</string>
 </resources>

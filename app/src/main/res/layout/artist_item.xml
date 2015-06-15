@@ -10,13 +10,15 @@
         android:id="@+id/artist_image_imageview"
         android:layout_width="@dimen/results_thumbnail_size"
         android:layout_height="@dimen/results_thumbnail_size"
+        android:padding="8dp"
         tools:src="@drawable/abc_ic_clear_mtrl_alpha"/>
 
     <TextView
         android:id="@+id/artist_name_textview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:text="Artist name"/>
-
+        android:layout_marginLeft="8dp"
+        tools:text="Artist name"
+        style="@style/Base.TextAppearance.AppCompat.SearchResult.Title"/>
 
 </LinearLayout>

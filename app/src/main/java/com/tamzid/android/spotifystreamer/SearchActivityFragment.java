@@ -24,6 +24,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
@@ -45,11 +46,22 @@ import retrofit.client.Response;
 public class SearchActivityFragment extends Fragment {
     private static final String LOG_TAG = SearchActivityFragment.class.getSimpleName();
 
-    private static final int RETRIEVED_ARTISTS = 1;
+    // Bundle args
+    private static final String BUNDLE_SEARCH_TEXT = "com.tamzid.android.spotifystreamer.searchText";
+    private static final String BUNDLE_SEARCHED_ARTIST_ARRAY = "com.tamzid.android.spotifystreamer.searchedArtistArray";
 
+    // Requests
+    private static final int RETRIEVED_ARTISTS = 1;
+    private static final int NO_RESULTS = 3;
+
+    // Views
     private ListView mListView;
+    private EditText mArtistSearchEditText;
+
+    // Utilities
     private SpotifyWrapperArtistAdapter mArtistAdapter;
     private List<Artist> mArtists = new ArrayList<>();
+    private ArrayList<Artist> mSaveArtist = new ArrayList<>();
 
     private OnArtistSelectedListener mListener;
 
@@ -66,6 +78,8 @@ public class SearchActivityFragment extends Fragment {
                     mArtistAdapter = new SpotifyWrapperArtistAdapter(getActivity(), R.layout.artist_item, (List<Artist>) msg.obj);
                     mListView.setAdapter(mArtistAdapter);
                     break;
+                case NO_RESULTS:
+                    Toast.makeText(getActivity(), "No results found, try refining the search terms.", Toast.LENGTH_SHORT).show();
                 default:
                     super.handleMessage(msg);
             }
@@ -94,6 +108,15 @@ public class SearchActivityFragment extends Fragment {
         setRetainInstance(true);
     }
 
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        if (mArtistSearchEditText != null) {
+            outState.putString(BUNDLE_SEARCH_TEXT, mArtistSearchEditText.getText().toString());
+        }
+        super.onSaveInstanceState(outState);
+    }
+
     @Override
     public void onResume() {
         super.onResume();
@@ -107,15 +130,15 @@ public class SearchActivityFragment extends Fragment {
     public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_search, container, false);
 
-        final EditText artistSearchEditText = (EditText) v.findViewById(R.id.artist_search_edittext);
-        artistSearchEditText.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
-        artistSearchEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        mArtistSearchEditText = (EditText) v.findViewById(R.id.artist_search_edittext);
+        mArtistSearchEditText.setImeOptions(EditorInfo.IME_ACTION_SEARCH);
+        mArtistSearchEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (event == null) {
                     if (actionId == EditorInfo.IME_ACTION_SEARCH) {
                         searchArtist(v.getText().toString());
-                        artistSearchEditText.clearFocus();
+                        mArtistSearchEditText.clearFocus();
                         InputMethodManager inputMethodManager = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
                         inputMethodManager.hideSoftInputFromWindow(v.getWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
                     } else {
@@ -128,12 +151,17 @@ public class SearchActivityFragment extends Fragment {
         });
 
         mListView = (ListView) v.findViewById(R.id.artist_results_listview);
+        mListView.setEmptyView(v.findViewById(R.id.empty_search_textview));
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 selectArtist(mArtistAdapter.getItem(position).name, mArtistAdapter.getItem(position).id);
             }
         });
+
+        if (savedInstanceState != null) {
+            mArtistSearchEditText.setText(savedInstanceState.getString(BUNDLE_SEARCH_TEXT));
+        }
 
         if (!mArtists.isEmpty()) {
             mArtistAdapter = new SpotifyWrapperArtistAdapter(getActivity(), R.layout.artist_item, mArtists);
@@ -149,15 +177,20 @@ public class SearchActivityFragment extends Fragment {
         spotifyService.searchArtists(artistQuery, new SpotifyCallback<ArtistsPager>() {
             @Override
             public void failure(SpotifyError spotifyError) {
-                Log.v(LOG_TAG, "Failed to get Artists");
+                Log.v(LOG_TAG, spotifyError.getErrorDetails().message);
             }
 
             @Override
             public void success(ArtistsPager artistsPager, Response response) {
-                Log.v(LOG_TAG, "Success");
+                Log.v(LOG_TAG, "Connection success");
                 mArtists = artistsPager.artists.items;
-                Message completeMessage = mHandler.obtainMessage(RETRIEVED_ARTISTS, mArtists);
-                completeMessage.sendToTarget();
+                if (mArtists.isEmpty()) {
+                    Message noResultsMessage = mHandler.obtainMessage(NO_RESULTS);
+                    noResultsMessage.sendToTarget();
+                } else {
+                    Message completeMessage = mHandler.obtainMessage(RETRIEVED_ARTISTS, mArtists);
+                    completeMessage.sendToTarget();
+                }
             }
         });
     }
@@ -196,9 +229,9 @@ public class SearchActivityFragment extends Fragment {
                 // get one before that to avoid making too many calculations searching for the perfect
                 // size, but still better than downloading the largest images.
                 int smallestImage = artist.images.size() - 2;
-                Picasso.with(getContext()).load(artist.images.get(smallestImage).url).placeholder(R.drawable.boom).error(R.drawable.boom).into(artistImage);
+                Picasso.with(getContext()).load(artist.images.get(smallestImage).url).placeholder(R.drawable.loading_image).error(R.drawable.no_image_available).into(artistImage);
             } else {
-                Picasso.with(getContext()).load(R.drawable.boom).into(artistImage);
+                Picasso.with(getContext()).load(R.drawable.no_image_available).into(artistImage);
             }
 
             return convertView;

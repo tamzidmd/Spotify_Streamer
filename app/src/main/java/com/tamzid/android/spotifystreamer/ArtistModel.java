@@ -1,14 +1,11 @@
 package com.tamzid.android.spotifystreamer;
 
-import android.graphics.Bitmap;
+import java.io.Serializable;
 
-import java.util.List;
+import kaaes.spotify.webapi.android.models.Artist;
 
 /**
  * Created by Tamzid on 06/06/2015.
  */
-public class ArtistModel {
-    public String artistName;
-    public Bitmap artistImage;
-    public List<Album> artistAlbums;
+public class ArtistModel extends Artist implements Serializable {
 }

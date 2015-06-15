@@ -11,25 +11,29 @@
         android:id="@+id/album_image_imageview"
         android:layout_width="@dimen/results_thumbnail_size"
         android:layout_height="@dimen/results_thumbnail_size"
+        android:padding="8dp"
         tools:src="@drawable/abc_ic_clear_mtrl_alpha"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:layout_marginLeft="8dp">
 
         <TextView
             android:id="@+id/song_name_textview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Song name"/>
+            tools:text="Song name"
+            style="@style/TextAppearance.AppCompat.SearchResult.Title"/>
 
         <TextView
             android:id="@+id/album_name_textview"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            tools:text="Album name"/>
+            tools:text="Album name"
+            style="@style/Base.TextAppearance.AppCompat.SearchResult.Subtitle"/>
 
     </LinearLayout>
 
