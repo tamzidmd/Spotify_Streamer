@@ -62,7 +62,6 @@ public class SearchActivityFragment extends Fragment {
         setRetainInstance(true);
     }
 
-
     @Override
     public void onSaveInstanceState(Bundle outState) {
         if (mArtistSearchEditText != null) {
@@ -130,7 +129,17 @@ public class SearchActivityFragment extends Fragment {
         spotifyService.searchArtists(artistQuery, new SpotifyCallback<ArtistsPager>() {
             @Override
             public void failure(SpotifyError spotifyError) {
-                Log.v(LOG_TAG, spotifyError.getErrorDetails().message);
+                if (spotifyError.hasErrorDetails()) {
+                    Log.v(LOG_TAG, spotifyError.getErrorDetails().message);
+                }
+
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getActivity(), "Error with internet connection.", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
             }
 
             @Override

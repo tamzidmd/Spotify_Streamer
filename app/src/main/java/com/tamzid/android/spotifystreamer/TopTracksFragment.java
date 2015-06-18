@@ -14,6 +14,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
@@ -127,7 +128,16 @@ public class TopTracksFragment extends Fragment {
         service.getArtistTopTrack(artistId, options, new SpotifyCallback<Tracks>() {
             @Override
             public void failure(SpotifyError spotifyError) {
-                Log.v(LOG_TAG, "Failed to get Tracks");
+                if (spotifyError.hasErrorDetails()) {
+                    Log.v(LOG_TAG, spotifyError.getErrorDetails().message);
+                }
+
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(getActivity(), "Error with internet connection.", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
 
             @Override
@@ -135,17 +145,28 @@ public class TopTracksFragment extends Fragment {
                 Log.v(LOG_TAG, "Succeeded getting Tracks");
                 mTracks = tracks.tracks;
 
-                if (getActivity() != null) { // Prevent crash on quick exit
+                if (mTracks.isEmpty()) {
+
                     getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            showTracks(mTracks);
+                            Toast.makeText(getActivity(), "No top tracks for this artist!", Toast.LENGTH_SHORT).show();
                         }
                     });
+
+                } else {
+
+                    if (getActivity() != null) { // Prevent crash on quick exit
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                showTracks(mTracks);
+                            }
+                        });
+                    }
+
                 }
 
-                /*Message completeMessage = mHandler.obtainMessage(RETRIEVED_TRACKS, mTracks);
-                completeMessage.sendToTarget();*/
             }
         });
     }
