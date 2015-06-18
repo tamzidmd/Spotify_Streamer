@@ -1,11 +1,9 @@
 <resources>
     <string name="app_name">Spotify Streamer</string>
-    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
     <string name="search_for_artist">Search artists</string>
-
-<!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="top_tracks_title">Top 10 Tracks</string>
     <string name="empty_search_list">Search for your favourite artist!</string>
+    <string name="artist_image_content_description">Artist portrait</string>
+    <string name="album_image_content_description">Album image</string>
 </resources>

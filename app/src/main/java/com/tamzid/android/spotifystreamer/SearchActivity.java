@@ -4,39 +4,40 @@ import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
 
-
+/** Manages fragments for navigating to the top 10 tracks of a user-chosen Spotify artist */
 public class SearchActivity extends AppCompatActivity
         implements SearchActivityFragment.OnArtistSelectedListener, TopTracksFragment.OnSongSelectedListener {
+
+    private static final String TAG_SEARCH_FRAGMENT = "com.tamzid.android.spotifystreamer.searchFragment";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search);
 
+        // Try to retain last fragment used
         if (findViewById(R.id.fragmentContainer) != null) {
             if (savedInstanceState != null) {
+                return;
+            }
+
+            if (getFragmentManager().findFragmentByTag(TAG_SEARCH_FRAGMENT) != null) {
                 return;
             }
 
             SearchActivityFragment searchActivityFragment = new SearchActivityFragment();
 
             getFragmentManager().beginTransaction()
-                    .add(R.id.fragmentContainer, searchActivityFragment)
+                    .add(R.id.fragmentContainer, searchActivityFragment, TAG_SEARCH_FRAGMENT)
                     .commit();
 
+
         }
-
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-
-        super.onSaveInstanceState(outState, outPersistentState);
-    }
-
+    /** Replaces fragment in the container with passed fragment and maintains back-stack */
     private void replaceFragment(Fragment fragment) {
         FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
 
@@ -53,12 +54,12 @@ public class SearchActivity extends AppCompatActivity
 
     @Override
     public void onSongSelected(Uri uri) {
-
+        // TODO: Fill out methods for next project
     }
 
     @Override
     public void onBackPressed() {
-        // When user presses back button on utility bar\
+        // When user presses back button on utility bar
         if (getFragmentManager().getBackStackEntryCount() > 0) {
             getFragmentManager().popBackStack();
         } else {

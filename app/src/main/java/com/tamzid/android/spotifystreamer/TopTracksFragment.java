@@ -5,9 +5,6 @@ import android.app.Fragment;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -33,19 +30,9 @@ import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import retrofit.client.Response;
 
-
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link OnSongSelectedListener} interface
- * to handle interaction events.
- * Use the {@link TopTracksFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+/** Displays the top 10 tracks of a chosen artist */
 public class TopTracksFragment extends Fragment {
     public static final String LOG_TAG = TopTracksFragment.class.getSimpleName();
-    public static final String COUNTRY_CODE = "US";
-    public static final int RETRIEVED_TRACKS = 2;
 
     // Arguments
     private static final String ARG_ARTIST_NAME = "com.tamzid.android.spotifystreamer.artistName";
@@ -54,30 +41,20 @@ public class TopTracksFragment extends Fragment {
     // Parameters
     private String mArtistName;
     private String mArtistId;
+    public static final String COUNTRY_CODE = "US";
 
+    // Views
     private ListView mListView;
+
+    // Utilities
     private SpotifyWrapperTopTracksAdapter mTopTracksAdapter;
     private List<Track> mTracks = new ArrayList<>();
-
-    private Handler mHandler = new Handler(Looper.getMainLooper()) {
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case RETRIEVED_TRACKS:
-                    mTopTracksAdapter = new SpotifyWrapperTopTracksAdapter(getActivity(), R.layout.track_item, (List<Track>) msg.obj);
-                    mListView.setAdapter(mTopTracksAdapter);
-                    break;
-                default:
-                    super.handleMessage(msg);
-            }
-        }
-    };
 
     private OnSongSelectedListener mListener;
 
     public interface OnSongSelectedListener {
         // TODO: Update argument type and name
-        public void onSongSelected(Uri uri);
+        void onSongSelected(Uri uri);
     }
 
     public static TopTracksFragment newInstance(String artistName, String artistId) {
@@ -97,7 +74,9 @@ public class TopTracksFragment extends Fragment {
         if (getArguments() != null) {
             mArtistName = getArguments().getString(ARG_ARTIST_NAME);
             mArtistId = getArguments().getString(ARG_ARTIST_ID);
-            searchTopTracks(mArtistId);
+            if (getActivity() != null) {
+                searchTopTracks(mArtistId);
+            }
         }
     }
 
@@ -117,20 +96,28 @@ public class TopTracksFragment extends Fragment {
 
         mListView = (ListView) v.findViewById(R.id.track_results_listview);
 
+        // Reload the track list if it exists
         if (!mTracks.isEmpty()) {
-            mTopTracksAdapter = new SpotifyWrapperTopTracksAdapter(getActivity(), R.layout.track_item, mTracks);
-            mListView.setAdapter(mTopTracksAdapter);
+            showTracks(mTracks);
         }
 
         return v;
     }
 
+    /** Creates an adapter for found tracks and attaches it to the ListView */
+    private void showTracks(List<Track> tracks) {
+        mTopTracksAdapter = new SpotifyWrapperTopTracksAdapter(getActivity(), R.layout.artist_item, tracks);
+        mListView.setAdapter(mTopTracksAdapter);
+    }
+
+    /** Open the song player (placeholder for next project) */
     private void selectSong(Uri uri) {
         if (mListener != null) {
             mListener.onSongSelected(uri);
         }
     }
 
+    /** Searches for the top 10 tracks for the artistId */
     private void searchTopTracks(String artistId) {
         Map<String, Object> options = new HashMap<>();
         options.put("country", COUNTRY_CODE);
@@ -147,17 +134,23 @@ public class TopTracksFragment extends Fragment {
             public void success(Tracks tracks, Response response) {
                 Log.v(LOG_TAG, "Succeeded getting Tracks");
                 mTracks = tracks.tracks;
-                Message completeMessage = mHandler.obtainMessage(RETRIEVED_TRACKS, mTracks);
-                completeMessage.sendToTarget();
+
+                if (getActivity() != null) { // Prevent crash on quick exit
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            showTracks(mTracks);
+                        }
+                    });
+                }
+
+                /*Message completeMessage = mHandler.obtainMessage(RETRIEVED_TRACKS, mTracks);
+                completeMessage.sendToTarget();*/
             }
         });
     }
 
     private class SpotifyWrapperTopTracksAdapter extends ArrayAdapter<Track> {
-        public SpotifyWrapperTopTracksAdapter(Context context, int textViewResourceId) {
-            super(context, textViewResourceId);
-        }
-
         public SpotifyWrapperTopTracksAdapter(Context context, int resource, List<Track> tracks) {
             super(context, resource, tracks);
         }

@@ -12,6 +12,7 @@
         android:layout_width="@dimen/results_thumbnail_size"
         android:layout_height="@dimen/results_thumbnail_size"
         android:padding="8dp"
+        android:contentDescription="@string/album_image_content_description"
         tools:src="@drawable/abc_ic_clear_mtrl_alpha"/>
 
     <LinearLayout

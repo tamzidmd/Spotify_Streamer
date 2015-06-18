@@ -4,16 +4,10 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -40,19 +34,12 @@ import kaaes.spotify.webapi.android.models.ArtistsPager;
 import retrofit.client.Response;
 
 
-/**
- * A placeholder fragment containing a simple view.
- */
+/** Searches for an artist on Spotify and returns a selected artist's name and id to host Activity */
 public class SearchActivityFragment extends Fragment {
     private static final String LOG_TAG = SearchActivityFragment.class.getSimpleName();
 
     // Bundle args
     private static final String BUNDLE_SEARCH_TEXT = "com.tamzid.android.spotifystreamer.searchText";
-    private static final String BUNDLE_SEARCHED_ARTIST_ARRAY = "com.tamzid.android.spotifystreamer.searchedArtistArray";
-
-    // Requests
-    private static final int RETRIEVED_ARTISTS = 1;
-    private static final int NO_RESULTS = 3;
 
     // Views
     private ListView mListView;
@@ -61,44 +48,11 @@ public class SearchActivityFragment extends Fragment {
     // Utilities
     private SpotifyWrapperArtistAdapter mArtistAdapter;
     private List<Artist> mArtists = new ArrayList<>();
-    private ArrayList<Artist> mSaveArtist = new ArrayList<>();
 
     private OnArtistSelectedListener mListener;
 
     public interface OnArtistSelectedListener {
-        public void onArtistSelected(String artistName, String artistId);
-    }
-
-    private Handler mHandler = new Handler(Looper.getMainLooper()) {
-        @Override
-        public void handleMessage(Message msg) {
-
-            switch (msg.what) {
-                case RETRIEVED_ARTISTS:
-                    mArtistAdapter = new SpotifyWrapperArtistAdapter(getActivity(), R.layout.artist_item, (List<Artist>) msg.obj);
-                    mListView.setAdapter(mArtistAdapter);
-                    break;
-                case NO_RESULTS:
-                    Toast.makeText(getActivity(), "No results found, try refining the search terms.", Toast.LENGTH_SHORT).show();
-                default:
-                    super.handleMessage(msg);
-            }
-        }
-    };
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.menu_search, menu);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.debug_refresh_listview:
-
-                return true;
-        }
-        return false;
+        void onArtistSelected(String artistName, String artistId);
     }
 
     @Override
@@ -164,8 +118,7 @@ public class SearchActivityFragment extends Fragment {
         }
 
         if (!mArtists.isEmpty()) {
-            mArtistAdapter = new SpotifyWrapperArtistAdapter(getActivity(), R.layout.artist_item, mArtists);
-            mListView.setAdapter(mArtistAdapter);
+            showArtists(mArtists);
         }
 
         return v;
@@ -185,14 +138,32 @@ public class SearchActivityFragment extends Fragment {
                 Log.v(LOG_TAG, "Connection success");
                 mArtists = artistsPager.artists.items;
                 if (mArtists.isEmpty()) {
-                    Message noResultsMessage = mHandler.obtainMessage(NO_RESULTS);
-                    noResultsMessage.sendToTarget();
+
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(getActivity(), "No results found, try refining the search terms.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
                 } else {
-                    Message completeMessage = mHandler.obtainMessage(RETRIEVED_ARTISTS, mArtists);
-                    completeMessage.sendToTarget();
+
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            showArtists(mArtists);
+                        }
+                    });
+
+
                 }
             }
         });
+    }
+
+    private void showArtists(List<Artist> artists) {
+        mArtistAdapter = new SpotifyWrapperArtistAdapter(getActivity(), R.layout.artist_item, artists);
+        mListView.setAdapter(mArtistAdapter);
     }
 
     private void selectArtist(String artistName, String artistId) {
@@ -202,10 +173,6 @@ public class SearchActivityFragment extends Fragment {
     }
 
     private class SpotifyWrapperArtistAdapter extends ArrayAdapter<Artist> {
-        public SpotifyWrapperArtistAdapter(Context context, int textViewResourceId) {
-            super(context, textViewResourceId);
-        }
-
         public SpotifyWrapperArtistAdapter(Context context, int resource, List<Artist> artists) {
             super(context, resource, artists);
         }
