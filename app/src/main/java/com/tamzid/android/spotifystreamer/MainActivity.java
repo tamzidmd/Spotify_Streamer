@@ -6,9 +6,12 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
+import java.util.List;
+
 /** Manages fragments for navigating to the top 10 tracks of a user-chosen Spotify artist */
-public class SearchActivity extends AppCompatActivity
-        implements SearchActivityFragment.OnArtistSelectedListener, TopTracksFragment.OnSongSelectedListener {
+public class MainActivity extends AppCompatActivity
+        implements SearchFragment.OnArtistSelectedListener, TopTracksFragment.OnSongSelectedListener,
+        PlayerFragment.OnFragmentInteractionListener {
 
     private static final String TAG_SEARCH_FRAGMENT = "com.tamzid.android.spotifystreamer.searchFragment";
 
@@ -27,10 +30,10 @@ public class SearchActivity extends AppCompatActivity
                 return;
             }
 
-            SearchActivityFragment searchActivityFragment = new SearchActivityFragment();
+            SearchFragment searchFragment = new SearchFragment();
 
             getFragmentManager().beginTransaction()
-                    .add(R.id.fragmentContainer, searchActivityFragment, TAG_SEARCH_FRAGMENT)
+                    .add(R.id.fragmentContainer, searchFragment, TAG_SEARCH_FRAGMENT)
                     .commit();
 
 
@@ -53,8 +56,14 @@ public class SearchActivity extends AppCompatActivity
     }
 
     @Override
-    public void onSongSelected(Uri uri) {
-        // TODO: Fill out methods for next project
+    public void onSongSelected(List<TrackBundle> trackList, int selectedTrack) {
+        PlayerFragment playerFragment = PlayerFragment.newInstance(trackList, selectedTrack);
+        replaceFragment(playerFragment);
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
     }
 
     @Override

@@ -3,13 +3,13 @@ package com.tamzid.android.spotifystreamer;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -27,6 +27,8 @@ import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyCallback;
 import kaaes.spotify.webapi.android.SpotifyError;
 import kaaes.spotify.webapi.android.SpotifyService;
+import kaaes.spotify.webapi.android.models.ArtistSimple;
+import kaaes.spotify.webapi.android.models.Image;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import retrofit.client.Response;
@@ -54,8 +56,7 @@ public class TopTracksFragment extends Fragment {
     private OnSongSelectedListener mListener;
 
     public interface OnSongSelectedListener {
-        // TODO: Update argument type and name
-        void onSongSelected(Uri uri);
+        void onSongSelected(List<TrackBundle> trackList, int selectedTrack);
     }
 
     public static TopTracksFragment newInstance(String artistName, String artistId) {
@@ -96,6 +97,12 @@ public class TopTracksFragment extends Fragment {
         View v = inflater.inflate(R.layout.fragment_top_tracks, container, false);
 
         mListView = (ListView) v.findViewById(R.id.track_results_listview);
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                selectSong(packageTracksIntoSerializable(mTracks), position);
+            }
+        });
 
         // Reload the track list if it exists
         if (!mTracks.isEmpty()) {
@@ -107,14 +114,14 @@ public class TopTracksFragment extends Fragment {
 
     /** Creates an adapter for found tracks and attaches it to the ListView */
     private void showTracks(List<Track> tracks) {
-        mTopTracksAdapter = new SpotifyWrapperTopTracksAdapter(getActivity(), R.layout.artist_item, tracks);
+        mTopTracksAdapter = new SpotifyWrapperTopTracksAdapter(getActivity(), R.layout.list_item_artist, tracks);
         mListView.setAdapter(mTopTracksAdapter);
     }
 
     /** Open the song player (placeholder for next project) */
-    private void selectSong(Uri uri) {
+    private void selectSong(List<TrackBundle> trackList, int selectedTrack) {
         if (mListener != null) {
-            mListener.onSongSelected(uri);
+            mListener.onSongSelected(trackList, selectedTrack);
         }
     }
 
@@ -171,6 +178,32 @@ public class TopTracksFragment extends Fragment {
         });
     }
 
+    private List<TrackBundle> packageTracksIntoSerializable(List<Track> trackList) {
+        List<TrackBundle> returnList = new ArrayList<>();
+
+        for (Track track : trackList) {
+            TrackBundle trackBundle = new TrackBundle();
+
+            trackBundle.album = track.album.name;
+            trackBundle.name = track.name;
+            trackBundle.duration_ms = track.duration_ms;
+
+            List<ArtistSimple> artists = track.artists;
+            for (ArtistSimple artist : artists) {
+                trackBundle.artists.add(artist.name);
+            }
+
+            List<Image> albumArt = track.album.images;
+            for (Image image : albumArt) {
+                trackBundle.imageUrls.add(image.url);
+            }
+
+            returnList.add(trackBundle);
+        }
+
+        return returnList;
+    }
+
     private class SpotifyWrapperTopTracksAdapter extends ArrayAdapter<Track> {
         public SpotifyWrapperTopTracksAdapter(Context context, int resource, List<Track> tracks) {
             super(context, resource, tracks);
@@ -182,7 +215,7 @@ public class TopTracksFragment extends Fragment {
             Track track = getItem(position);
 
             if (convertView == null) {
-                convertView = LayoutInflater.from(getContext()).inflate(R.layout.track_item, parent, false);
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item_track, parent, false);
             }
 
             TextView songName = (TextView) convertView.findViewById(R.id.song_name_textview);

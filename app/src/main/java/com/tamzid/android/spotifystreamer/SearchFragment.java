@@ -35,8 +35,8 @@ import retrofit.client.Response;
 
 
 /** Searches for an artist on Spotify and returns a selected artist's name and id to host Activity */
-public class SearchActivityFragment extends Fragment {
-    private static final String LOG_TAG = SearchActivityFragment.class.getSimpleName();
+public class SearchFragment extends Fragment {
+    private static final String LOG_TAG = SearchFragment.class.getSimpleName();
 
     // Bundle args
     private static final String BUNDLE_SEARCH_TEXT = "com.tamzid.android.spotifystreamer.searchText";
@@ -171,7 +171,7 @@ public class SearchActivityFragment extends Fragment {
     }
 
     private void showArtists(List<Artist> artists) {
-        mArtistAdapter = new SpotifyWrapperArtistAdapter(getActivity(), R.layout.artist_item, artists);
+        mArtistAdapter = new SpotifyWrapperArtistAdapter(getActivity(), R.layout.list_item_artist, artists);
         mListView.setAdapter(mArtistAdapter);
     }
 
@@ -192,7 +192,7 @@ public class SearchActivityFragment extends Fragment {
             Artist artist = getItem(position);
 
             if (convertView == null) {
-                convertView = LayoutInflater.from(getContext()).inflate(R.layout.artist_item, parent, false);
+                convertView = LayoutInflater.from(getContext()).inflate(R.layout.list_item_artist, parent, false);
             }
 
             TextView artistName = (TextView) convertView.findViewById(R.id.artist_name_textview);

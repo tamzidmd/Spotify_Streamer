@@ -35,6 +35,7 @@
                 android:paddingBottom="4dp"
                 android:inputType="textCapSentences"
                 android:singleLine="true"
+                android:imeOptions="actionSearch"
                 android:background="@null"/>
         </LinearLayout>
     </android.support.v7.widget.CardView>

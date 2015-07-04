@@ -6,4 +6,7 @@
     <string name="empty_search_list">Search for your favourite artist!</string>
     <string name="artist_image_content_description">Artist portrait</string>
     <string name="album_image_content_description">Album image</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
