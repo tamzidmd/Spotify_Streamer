@@ -1,13 +1,57 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             xmlns:tools="http://schemas.android.com/tools"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent"
-             tools:context="com.tamzid.android.spotifystreamer.PlayerFragment">
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
 
-    <!-- TODO: Update blank fragment layout -->
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment"/>
+        android:id="@+id/fragment_player_artist_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Artist Name"/>
 
-</FrameLayout>
+    <TextView
+        android:id="@+id/fragment_player_album_textview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Album Name"/>
+
+    <ImageView
+        android:id="@+id/fragment_player_albumart_imageview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:src="@drawable/loading_image"/>
+
+    <SeekBar
+        android:id="@+id/fragment_player_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/fragment_player_previous_imagebutton"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_media_previous"/>
+
+        <ImageButton
+            android:id="@+id/fragment_player_playpause_imagebutton"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_media_play"/>
+
+        <ImageButton
+            android:id="@+id/fragment_player_next_imagebutton"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:src="@android:drawable/ic_media_next"/>
+
+    </LinearLayout>
+
+</LinearLayout>
