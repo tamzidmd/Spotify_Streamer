@@ -1,5 +1,7 @@
-# Spotify_Streamer
+![](https://raw.githubusercontent.com/tamzidmd/Spotify_Streamer/master/app/src/main/res/mipmap-xxhdpi/ic_launcher.png)
+## Spotify Streamer
 Spotify Streaming application for Android Nanodegree Project Portfolio
+
 
 ---
 Fully complete, this application will allow the user to search for an artist from the main screen.The selected artist's top 10 most popular tracks will be displayed, and when selected, the song snippet will play.
