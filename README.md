@@ -7,9 +7,9 @@ The selected artist's top 10 most popular tracks are displayed, and when selecte
 
 The layout will support rotation configuration, and a tablet sized layout.
 
----
 This project is fully implemented by myself, with assistance from the Android Developer Documentation.
 
+## License
 
 	Copyright 2015 Tamzid Mahmood
 	
