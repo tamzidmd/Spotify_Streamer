@@ -18,7 +18,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_search);
+        setContentView(R.layout.activity_main);
 
         // Try to retain last fragment used
         if (findViewById(R.id.fragmentContainer) != null) {
@@ -57,8 +57,8 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onSongSelected(List<TrackBundle> trackList, int selectedTrack) {
-        PlayerFragment playerFragment = PlayerFragment.newInstance(trackList, selectedTrack);
-        replaceFragment(playerFragment);
+        PlayerDialogFragment playerDialogFragment = PlayerDialogFragment.newInstance(trackList, selectedTrack);
+        replaceFragment(playerDialogFragment);
     }
 
     @Override

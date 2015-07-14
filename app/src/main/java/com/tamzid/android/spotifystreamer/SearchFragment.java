@@ -38,7 +38,7 @@ import retrofit.client.Response;
 public class SearchFragment extends Fragment {
     private static final String LOG_TAG = SearchFragment.class.getSimpleName();
 
-    // Bundle args
+    // Save instance state
     private static final String BUNDLE_SEARCH_TEXT = "com.tamzid.android.spotifystreamer.searchText";
 
     // Views
