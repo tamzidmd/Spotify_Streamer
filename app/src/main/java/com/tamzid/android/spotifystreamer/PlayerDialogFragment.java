@@ -2,20 +2,25 @@ package com.tamzid.android.spotifystreamer;
 
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.graphics.Palette;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +45,7 @@ public class PlayerDialogFragment extends DialogFragment {
     private MediaPlayer mMediaPlayer;
 
     // UI
+    private LinearLayout mBackgroundLinearLayout;
     private TextView mArtistNameTextView;
     private TextView mAlbumTitleTextView;
     private ImageView mAlbumArtImageView;
@@ -49,12 +55,41 @@ public class PlayerDialogFragment extends DialogFragment {
     private TextView mDurationTextView;
     private ImageButton mPlayPauseImageButton;
 
+    private Target mTarget = new Target() {
+        @Override
+        public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+            mAlbumArtImageView.setImageBitmap(bitmap);
+            Palette.generateAsync(bitmap, new Palette.PaletteAsyncListener() {
+                @Override
+                public void onGenerated(Palette palette) {
+                    int mutedDark = palette.getDarkMutedColor(getResources().getColor(R.color.material_blue_grey_950));
+                    int muted = palette.getMutedColor(getResources().getColor(R.color.material_blue_grey_900));
+                    int vibrant = palette.getVibrantColor(getResources().getColor(R.color.material_deep_teal_200));
+
+                    mBackgroundLinearLayout.setBackgroundColor(muted);
+                    //mSeekBar.setBackgroundColor(vibrant);
+
+                }
+            });
+        }
+
+        @Override
+        public void onBitmapFailed(Drawable errorDrawable) {
+
+        }
+
+        @Override
+        public void onPrepareLoad(Drawable placeHolderDrawable) {
+
+        }
+    };;
+
     /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param trackList Parameter 1.
-     * @param trackNowPlaying Parameter 2.
+     * @param trackList A list of {@link TrackBundle}s containing relevant track information
+     * @param trackNowPlaying Index of currently playing track from {@code trackList}
      * @return A new instance of fragment PlayerFragment.
      */
     // TODO: Rename and change types and number of parameters
@@ -111,8 +146,9 @@ public class PlayerDialogFragment extends DialogFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v = inflater.inflate(R.layout.fragment_player, container, false);
+        View v = inflater.inflate(R.layout.fragment_dialog_player, container, false);
 
+        mBackgroundLinearLayout = (LinearLayout) v.findViewById(R.id.fragment_dialog_player_background);
         mArtistNameTextView = (TextView) v.findViewById(R.id.fragment_player_artist_textview);
         mAlbumTitleTextView = (TextView) v.findViewById(R.id.fragment_player_album_textview);
         mAlbumArtImageView = (ImageView) v.findViewById(R.id.fragment_player_albumart_imageview);
@@ -165,6 +201,7 @@ public class PlayerDialogFragment extends DialogFragment {
     @Override
     public void onPause() {
         releaseMediaPlayer(mMediaPlayer);
+        Picasso.with(getActivity()).cancelRequest(mTarget);
         super.onPause();
     }
 
@@ -176,7 +213,9 @@ public class PlayerDialogFragment extends DialogFragment {
 
         mArtistNameTextView.setText(trackPlaying.artists.get(0));
         mAlbumTitleTextView.setText(trackPlaying.album);
-        Picasso.with(getActivity()).load(trackPlaying.imageUrls.get(0)).into(mAlbumArtImageView);
+
+        Picasso.with(getActivity()).load(trackPlaying.imageUrls.get(0)).into(mTarget);
+
         mTrackTitleTextView.setText(trackPlaying.name);
         mDurationTextView.setText(formatMillisToString(trackPlaying.duration_ms));
     }

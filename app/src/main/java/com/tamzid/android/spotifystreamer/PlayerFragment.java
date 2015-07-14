@@ -119,7 +119,7 @@ public class PlayerFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View v = inflater.inflate(R.layout.fragment_player, container, false);
+        View v = inflater.inflate(R.layout.fragment_dialog_player, container, false);
 
         mArtistNameTextView = (TextView) v.findViewById(R.id.fragment_player_artist_textview);
         mAlbumTitleTextView = (TextView) v.findViewById(R.id.fragment_player_album_textview);
