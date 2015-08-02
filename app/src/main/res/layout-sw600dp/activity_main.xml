@@ -1,0 +1,31 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:divider="?android:attr/dividerHorizontal">
+
+    <!--
+    This layout is a two-pane layout for the Items master/detail flow.
+    -->
+    
+    <fragment
+        android:id="@+id/fragment_search"
+        android:name="com.tamzid.android.spotifystreamer.SearchFragment"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        tools:layout="@layout/fragment_search"/>
+    
+    <FrameLayout
+        android:id="@+id/fragment_top_tracks_container"
+        tools:layout="@layout/fragment_search"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="2"/>
+
+
+</LinearLayout>
+
+

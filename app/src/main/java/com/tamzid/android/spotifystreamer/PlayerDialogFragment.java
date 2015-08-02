@@ -7,6 +7,7 @@ import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.graphics.Palette;
 import android.util.Log;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /** Auto-play through a list of passed tracks.*/
-public class PlayerDialogFragment extends DialogFragment {
+public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.OnCompletionListener {
     private static final String LOG_TAG = PlayerDialogFragment.class.getSimpleName();
 
     // Save instance state
@@ -42,7 +43,7 @@ public class PlayerDialogFragment extends DialogFragment {
     // Utilities
     private List<TrackBundle> mTrackList;
     private int mTrackNowPlaying;
-    private MediaPlayer mMediaPlayer;
+    private static MediaPlayer mMediaPlayer;
 
     // UI
     private LinearLayout mBackgroundLinearLayout;
@@ -62,11 +63,12 @@ public class PlayerDialogFragment extends DialogFragment {
             Palette.generateAsync(bitmap, new Palette.PaletteAsyncListener() {
                 @Override
                 public void onGenerated(Palette palette) {
-                    int mutedDark = palette.getDarkMutedColor(getResources().getColor(R.color.material_blue_grey_950));
-                    int muted = palette.getMutedColor(getResources().getColor(R.color.material_blue_grey_900));
-                    int vibrant = palette.getVibrantColor(getResources().getColor(R.color.material_deep_teal_200));
+                    int mutedDark = palette.getDarkMutedColor(getResources().getColor(R.color.background_material_dark));
+                    int muted = palette.getMutedColor(getResources().getColor(R.color.background_material_dark));
+                    int vibrant = palette.getVibrantColor(getResources().getColor(R.color.background_material_dark));
+                    int vibrantDark = palette.getDarkVibrantColor(getResources().getColor(R.color.background_material_dark));
 
-                    mBackgroundLinearLayout.setBackgroundColor(muted);
+                    mBackgroundLinearLayout.setBackgroundColor(vibrantDark);
                     //mSeekBar.setBackgroundColor(vibrant);
 
                 }
@@ -82,7 +84,10 @@ public class PlayerDialogFragment extends DialogFragment {
         public void onPrepareLoad(Drawable placeHolderDrawable) {
 
         }
-    };;
+    };
+
+    // Handler for seekbar
+    private Handler mHandler = new Handler();
 
     /**
      * Use this factory method to create a new instance of
@@ -159,12 +164,13 @@ public class PlayerDialogFragment extends DialogFragment {
 
         bindView();
 
+
+
         ImageButton previousImageButton = (ImageButton) v.findViewById(R.id.fragment_player_previous_imagebutton);
         previousImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                incrementTrack(false);
-                bindView();
+                previousTrack();
             }
         });
 
@@ -173,6 +179,7 @@ public class PlayerDialogFragment extends DialogFragment {
             @Override
             public void onClick(View v) {
                 pauseOrPlayCurrentTrack();
+
             }
         });
 
@@ -180,8 +187,7 @@ public class PlayerDialogFragment extends DialogFragment {
         nextImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                incrementTrack(true);
-                bindView();
+                nextTrack();
             }
         });
 
@@ -200,9 +206,19 @@ public class PlayerDialogFragment extends DialogFragment {
 
     @Override
     public void onPause() {
-        releaseMediaPlayer(mMediaPlayer);
         Picasso.with(getActivity()).cancelRequest(mTarget);
         super.onPause();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroy() {
+        releaseMediaPlayer(mMediaPlayer);
+        super.onDestroy();
     }
 
     //region LOCAL METHODS=========================================================================
@@ -213,11 +229,11 @@ public class PlayerDialogFragment extends DialogFragment {
 
         mArtistNameTextView.setText(trackPlaying.artists.get(0));
         mAlbumTitleTextView.setText(trackPlaying.album);
-
         Picasso.with(getActivity()).load(trackPlaying.imageUrls.get(0)).into(mTarget);
-
         mTrackTitleTextView.setText(trackPlaying.name);
-        mDurationTextView.setText(formatMillisToString(trackPlaying.duration_ms));
+
+        mElapsedTimeTextView.setText(formatMillisToString(0));
+        mDurationTextView.setText(formatMillisToString(0));
     }
 
     private void setPlayPauseIcon() {
@@ -228,11 +244,16 @@ public class PlayerDialogFragment extends DialogFragment {
         }
     }
 
+    private void setMaxDuration(int millis) {
+        mSeekBar.setMax(millis);
+        mDurationTextView.setText(formatMillisToString(millis));
+    }
+
     /** Set up media player, prepare, and start playing the song as soon as it's ready. */
     private void playCurrentTrack() {
         String songUrl = getSongUrl();
         mMediaPlayer = setupMediaPlayer(songUrl);
-        prepareMediaPlayer(mMediaPlayer, mStartPlayerListener);
+        prepareMediaPlayer(mMediaPlayer, mStartPlayerListener, mOnCompletionListener);
     }
 
     private void pauseOrPlayCurrentTrack() {
@@ -254,6 +275,44 @@ public class PlayerDialogFragment extends DialogFragment {
         public void onPrepared(MediaPlayer mp) {
             mp.start();
             setPlayPauseIcon();
+            setMaxDuration(mp.getDuration());
+            mHandler.postDelayed(mUpdateSeekBar, 100);
+
+            mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+
+                }
+
+                @Override
+                public void onStartTrackingTouch(SeekBar seekBar) {
+
+                }
+
+                @Override
+                public void onStopTrackingTouch(SeekBar seekBar) {
+                    mMediaPlayer.seekTo(seekBar.getProgress());
+                }
+            });
+        }
+    };
+
+    private MediaPlayer.OnCompletionListener mOnCompletionListener = new MediaPlayer.OnCompletionListener() {
+        @Override
+        public void onCompletion(MediaPlayer mp) {
+            nextTrack();
+        }
+    };
+
+    private Runnable mUpdateSeekBar = new Runnable() {
+        @Override
+        public void run() {
+            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+                int currentPosition = mMediaPlayer.getCurrentPosition();
+                mSeekBar.setProgress(currentPosition);
+                mElapsedTimeTextView.setText(formatMillisToString(currentPosition));
+            }
+            mHandler.postDelayed(this, 100);
         }
     };
 
@@ -278,23 +337,37 @@ public class PlayerDialogFragment extends DialogFragment {
     }
 
     /** Asynchronously prepares a media player and attaches a listener for when it is ready */
-    private void prepareMediaPlayer(MediaPlayer mediaPlayer, MediaPlayer.OnPreparedListener onPreparedListener) {
+    private void prepareMediaPlayer(MediaPlayer mediaPlayer, MediaPlayer.OnPreparedListener onPreparedListener, MediaPlayer.OnCompletionListener onCompletionListener) {
         mediaPlayer.prepareAsync();
         // Buffering might cause this method to be slow, do not call on UI thread.
         // Here, prepareAsync() is used and a listener is set for when the data is ready.
         mediaPlayer.setOnPreparedListener(onPreparedListener);
+        mediaPlayer.setOnCompletionListener(onCompletionListener);
     }
 
-    /** Releases the media player from memory */
     private void releaseMediaPlayer(MediaPlayer mediaPlayer) {
         if (mediaPlayer != null) {
             mediaPlayer.release();
-            mediaPlayer = null;
+            mMediaPlayer = null;
         }
     }
 
+    /** Goes to next track. Releases media player and plays new track. */
+    private void nextTrack() {
+        releaseMediaPlayer(mMediaPlayer);
+        incrementTrack(true);
+        bindView();
+    }
+
+    /** Goes to previous track. Releases media player and plays new track */
+    private void previousTrack() {
+        releaseMediaPlayer(mMediaPlayer);
+        incrementTrack(false);
+        bindView();
+    }
+
     /**
-     * Increment track count up or down, loop back if end is reached.
+     * Increment track count up or down, loop back if end is reached. Releases media player.
      *
      * @param incrementUp Enter <code>true</code> to increment up, <code>false</code> to increment
      *                    down.
@@ -303,20 +376,11 @@ public class PlayerDialogFragment extends DialogFragment {
         int trackListLastIndex = mTrackList.size() - 1;
 
         if (incrementUp) {
-            if (mTrackNowPlaying == trackListLastIndex) {
-                mTrackNowPlaying = 0;
-            } else {
-                ++mTrackNowPlaying;
-            }
+            mTrackNowPlaying = (mTrackNowPlaying + 1) % mTrackList.size();
         } else {
-            if (mTrackNowPlaying == 0) {
-                mTrackNowPlaying = trackListLastIndex;
-            } else {
-                --mTrackNowPlaying;
-            }
+            mTrackNowPlaying = (mTrackNowPlaying - 1) < 0 ? mTrackList.size() - 1 : mTrackNowPlaying - 1;
         }
 
-        releaseMediaPlayer(mMediaPlayer);
         playCurrentTrack();
     }
 
@@ -327,4 +391,11 @@ public class PlayerDialogFragment extends DialogFragment {
     }
 
     //endregion
+
+    //region INTERFACE METHODS ===================================================================
+
+    @Override
+    public void onCompletion(MediaPlayer mp) {
+        nextTrack();
+    }
 }

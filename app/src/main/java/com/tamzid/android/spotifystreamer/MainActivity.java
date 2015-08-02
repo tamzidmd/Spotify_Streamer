@@ -14,6 +14,8 @@ public class MainActivity extends AppCompatActivity
         PlayerFragment.OnFragmentInteractionListener {
 
     private static final String TAG_SEARCH_FRAGMENT = "com.tamzid.android.spotifystreamer.searchFragment";
+    private boolean mTwoPane;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
