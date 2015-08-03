@@ -15,8 +15,8 @@ public class MainActivity extends AppCompatActivity
 
     private static final String TAG_SEARCH_FRAGMENT = "com.tamzid.android.spotifystreamer.searchFragment";
     private static final String TAG_TOP_TRACKS_FRAGMENT = "com.tamzid.android.spotifystreamer.topTracksFragment";
+    private static final String TAG_PLAYER_DIALOG_FRAGMENT = "com.tamzid.android.spotifystreamer.playerDialogFragment";
     private boolean mTwoPane;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,8 +77,13 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onSongSelected(List<TrackBundle> trackList, int selectedTrack) {
-        PlayerDialogFragment playerDialogFragment = PlayerDialogFragment.newInstance(trackList, selectedTrack);
-        replaceFragment(playerDialogFragment);
+        if (mTwoPane) {
+            PlayerDialogFragment playerDialogFragment = PlayerDialogFragment.newInstance(trackList, selectedTrack);
+            playerDialogFragment.show(getFragmentManager(), TAG_PLAYER_DIALOG_FRAGMENT);
+        } else {
+            PlayerDialogFragment playerDialogFragment = PlayerDialogFragment.newInstance(trackList, selectedTrack);
+            replaceFragment(playerDialogFragment);
+        }
     }
 
     @Override
