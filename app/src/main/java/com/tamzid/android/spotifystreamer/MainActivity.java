@@ -14,6 +14,7 @@ public class MainActivity extends AppCompatActivity
         PlayerFragment.OnFragmentInteractionListener {
 
     private static final String TAG_SEARCH_FRAGMENT = "com.tamzid.android.spotifystreamer.searchFragment";
+    private static final String TAG_TOP_TRACKS_FRAGMENT = "com.tamzid.android.spotifystreamer.topTracksFragment";
     private boolean mTwoPane;
 
 
@@ -21,6 +22,18 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if (findViewById(R.id.fragment_top_tracks_container) != null) {
+            // If the top tracks container is visible, we are in a two-pane layout.
+            mTwoPane = true;
+            if (savedInstanceState == null) {
+                getFragmentManager().beginTransaction()
+                        .replace(R.id.fragment_top_tracks_container, new TopTracksFragment(), TAG_TOP_TRACKS_FRAGMENT)
+                        .commit();
+            }
+        } else {
+            mTwoPane = false;
+        }
 
         // Try to retain last fragment used
         if (findViewById(R.id.fragmentContainer) != null) {
@@ -46,9 +59,14 @@ public class MainActivity extends AppCompatActivity
     private void replaceFragment(Fragment fragment) {
         FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
 
-        fragmentTransaction.replace(R.id.fragmentContainer, fragment)
-                .addToBackStack(null)
-                .commit();
+        if (mTwoPane) {
+            fragmentTransaction.replace(R.id.fragment_top_tracks_container, fragment, TAG_TOP_TRACKS_FRAGMENT)
+                    .commit();
+        } else {
+            fragmentTransaction.replace(R.id.fragmentContainer, fragment)
+                    .addToBackStack(null)
+                    .commit();
+        }
     }
 
     @Override
