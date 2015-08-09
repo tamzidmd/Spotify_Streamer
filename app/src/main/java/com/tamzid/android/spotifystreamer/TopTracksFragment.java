@@ -39,6 +39,7 @@ public class TopTracksFragment extends Fragment {
 
     // Save instance state
     private static final String SAVESTATE_TOPTRACKS = "savestateTopTracks";
+    public static final String SAVESTATE_TRACKLIST = "savestateTrackList";
 
     // Arguments
     private static final String ARG_ARTIST_NAME = "com.tamzid.android.spotifystreamer.artistName";
@@ -77,7 +78,7 @@ public class TopTracksFragment extends Fragment {
         super.onActivityCreated(savedInstanceState);
 
         if (savedInstanceState != null && !savedInstanceState.isEmpty()) {
-            mTrackBundle = savedInstanceState.getParcelableArrayList(PlayerFragment.SAVESTATE_TRACKLIST);
+            mTrackBundle = savedInstanceState.getParcelableArrayList(SAVESTATE_TRACKLIST);
             showTracksBundle(mTrackBundle);
         }
 
@@ -96,7 +97,7 @@ public class TopTracksFragment extends Fragment {
             }
         } else if (savedInstanceState != null && !savedInstanceState.isEmpty()) {
             Debug.logD(LOG_TAG, "checked savedInstanceState in onCreateView");
-            mTrackBundle = savedInstanceState.getParcelableArrayList(PlayerFragment.SAVESTATE_TRACKLIST);
+            mTrackBundle = savedInstanceState.getParcelableArrayList(SAVESTATE_TRACKLIST);
         }
 
     }
@@ -105,7 +106,7 @@ public class TopTracksFragment extends Fragment {
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         Debug.logD(LOG_TAG, "saved state");
-        outState.putParcelableArrayList(PlayerFragment.SAVESTATE_TRACKLIST, (ArrayList<TrackBundle>) mTrackBundle);
+        outState.putParcelableArrayList(SAVESTATE_TRACKLIST, (ArrayList<TrackBundle>) mTrackBundle);
     }
 
     @Override

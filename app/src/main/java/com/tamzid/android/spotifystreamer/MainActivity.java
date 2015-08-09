@@ -2,7 +2,6 @@ package com.tamzid.android.spotifystreamer;
 
 import android.app.Fragment;
 import android.app.FragmentTransaction;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
@@ -10,8 +9,7 @@ import java.util.List;
 
 /** Manages fragments for navigating to the top 10 tracks of a user-chosen Spotify artist */
 public class MainActivity extends AppCompatActivity
-        implements SearchFragment.OnArtistSelectedListener, TopTracksFragment.OnSongSelectedListener,
-        PlayerFragment.OnFragmentInteractionListener {
+        implements SearchFragment.OnArtistSelectedListener, TopTracksFragment.OnSongSelectedListener {
 
     private static final String TAG_SEARCH_FRAGMENT = "com.tamzid.android.spotifystreamer.searchFragment";
     private static final String TAG_TOP_TRACKS_FRAGMENT = "com.tamzid.android.spotifystreamer.topTracksFragment";
@@ -84,11 +82,6 @@ public class MainActivity extends AppCompatActivity
             PlayerDialogFragment playerDialogFragment = PlayerDialogFragment.newInstance(trackList, selectedTrack);
             replaceFragment(playerDialogFragment);
         }
-    }
-
-    @Override
-    public void onFragmentInteraction(Uri uri) {
-
     }
 
     @Override

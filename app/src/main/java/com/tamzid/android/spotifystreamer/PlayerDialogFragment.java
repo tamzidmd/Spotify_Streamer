@@ -96,7 +96,7 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
      *
      * @param trackList A list of {@link TrackBundle}s containing relevant track information
      * @param trackNowPlaying Index of currently playing track from {@code trackList}
-     * @return A new instance of fragment PlayerFragment.
+     * @return A new instance of fragment PlayerDialogFragment.
      */
     // TODO: Rename and change types and number of parameters
     public static PlayerDialogFragment newInstance(List<TrackBundle> trackList, int trackNowPlaying) {
