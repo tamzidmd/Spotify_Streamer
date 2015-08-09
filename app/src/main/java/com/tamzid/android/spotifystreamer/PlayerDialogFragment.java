@@ -2,12 +2,15 @@ package com.tamzid.android.spotifystreamer;
 
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
-import android.media.AudioManager;
-import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v7.graphics.Palette;
 import android.util.Log;
@@ -20,22 +23,22 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /** Auto-play through a list of passed tracks.*/
-public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.OnCompletionListener {
+public class PlayerDialogFragment extends DialogFragment {
     private static final String LOG_TAG = PlayerDialogFragment.class.getSimpleName();
 
     // Save instance state
     private static final String SAVESTATE_TRACK_NOW_PLAYING = "savestateTrackNowPlaying";
     public static final String SAVESTATE_TRACKLIST = "savestateTrackList";
+    public static final String SAVESTATE_IS_MEDIA_PLAYER_SERVICE_BOUND = "saveStateIsMediaPlayerServiceBound";
 
     // Fragment initialization parameters
     private static final String ARG_TRACKLIST = "tracklist";
@@ -44,7 +47,11 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
     // Utilities
     private List<TrackBundle> mTrackList;
     private int mTrackNowPlaying;
-    private static MediaPlayer mMediaPlayer;
+    private MediaPlayerService mMediaPlayerService;
+    private Intent mPlayMusicIntent;
+    private boolean mIsMediaPlayerServiceBound = false;
+
+    private ServiceConnection mMediaPlayerServiceConnection;
 
     // UI
     private LinearLayout mBackgroundLinearLayout;
@@ -64,14 +71,8 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
             Palette.generateAsync(bitmap, new Palette.PaletteAsyncListener() {
                 @Override
                 public void onGenerated(Palette palette) {
-                    int mutedDark = palette.getDarkMutedColor(getResources().getColor(R.color.background_material_dark));
-                    int muted = palette.getMutedColor(getResources().getColor(R.color.background_material_dark));
-                    int vibrant = palette.getVibrantColor(getResources().getColor(R.color.background_material_dark));
                     int vibrantDark = palette.getDarkVibrantColor(getResources().getColor(R.color.background_material_dark));
-
                     mBackgroundLinearLayout.setBackgroundColor(vibrantDark);
-                    //mSeekBar.setBackgroundColor(vibrant);
-
                 }
             });
         }
@@ -130,6 +131,7 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
             Debug.logD(LOG_TAG, "used saveInstanceState");
             mTrackList = savedInstanceState.getParcelableArrayList(SAVESTATE_TRACKLIST);
             mTrackNowPlaying = savedInstanceState.getInt(SAVESTATE_TRACK_NOW_PLAYING);
+            mIsMediaPlayerServiceBound = savedInstanceState.getBoolean(SAVESTATE_IS_MEDIA_PLAYER_SERVICE_BOUND);
         } else if (getArguments() != null) {
             // Otherwise, get it from the argument bundle
             mTrackList = getArguments().getParcelableArrayList(ARG_TRACKLIST);
@@ -139,6 +141,31 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
             for (TrackBundle trackBundle : mTrackList) {
                 Log.d(LOG_TAG, "Contains: " + trackBundle.name);
             }
+        }
+
+        if (mPlayMusicIntent == null && !mIsMediaPlayerServiceBound) {
+            Log.d(LOG_TAG, "mPlayMusicIntent re-initialized");
+            mPlayMusicIntent = new Intent(getActivity().getApplicationContext(), MediaPlayerService.class);
+
+            mMediaPlayerServiceConnection = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    MediaPlayerService.MediaPlayerBinder binder = (MediaPlayerService.MediaPlayerBinder) service;
+                    mMediaPlayerService = binder.getService();
+                    mMediaPlayerService.mTrackList = mTrackList;
+                    mMediaPlayerService.mTrackNowPlaying = mTrackNowPlaying;
+                    mIsMediaPlayerServiceBound = true;
+                    mMediaPlayerService.playMusic();
+                }
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                    mIsMediaPlayerServiceBound = false;
+                }
+            };
+
+            getActivity().getApplicationContext().bindService(mPlayMusicIntent, mMediaPlayerServiceConnection, Context.BIND_AUTO_CREATE);
+            getActivity().getApplicationContext().startService(mPlayMusicIntent);
         }
 
     }
@@ -171,13 +198,11 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
 
         bindView();
 
-
-
         ImageButton previousImageButton = (ImageButton) v.findViewById(R.id.fragment_player_previous_imagebutton);
         previousImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                previousTrack();
+
             }
         });
 
@@ -185,8 +210,6 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
         mPlayPauseImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                pauseOrPlayCurrentTrack();
-
             }
         });
 
@@ -194,11 +217,11 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
         nextImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                nextTrack();
+
             }
         });
 
-        playCurrentTrack();
+
 
         return v;
     }
@@ -208,6 +231,7 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
         super.onSaveInstanceState(outState);
         outState.putParcelableArrayList(SAVESTATE_TRACKLIST, (ArrayList<TrackBundle>) mTrackList);
         outState.putInt(SAVESTATE_TRACK_NOW_PLAYING, mTrackNowPlaying);
+        outState.putBoolean(SAVESTATE_IS_MEDIA_PLAYER_SERVICE_BOUND, mIsMediaPlayerServiceBound);
         Debug.logD(LOG_TAG, "saved state");
     }
 
@@ -218,13 +242,9 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
-    }
-
-    @Override
     public void onDestroy() {
-        releaseMediaPlayer(mMediaPlayer);
+//        getActivity().stopService(mPlayMusicIntent);
+//        mMediaPlayerService = null;
         super.onDestroy();
     }
 
@@ -239,170 +259,87 @@ public class PlayerDialogFragment extends DialogFragment implements MediaPlayer.
         Picasso.with(getActivity()).load(trackPlaying.imageUrls.get(0)).into(mTarget);
         mTrackTitleTextView.setText(trackPlaying.name);
 
-        mElapsedTimeTextView.setText(formatMillisToString(0));
-        mDurationTextView.setText(formatMillisToString(0));
+        mElapsedTimeTextView.setText(MediaPlayerUtilities.formatMillisToString(0));
+        mDurationTextView.setText(MediaPlayerUtilities.formatMillisToString(0));
     }
 
-    private void setPlayPauseIcon() {
-        if (mMediaPlayer.isPlaying()) {
-            mPlayPauseImageButton.setImageResource(android.R.drawable.ic_media_pause);
-        } else {
-            mPlayPauseImageButton.setImageResource(android.R.drawable.ic_media_play);
-        }
+    private void displayToast(String displayText) {
+        Toast.makeText(getActivity(), displayText, Toast.LENGTH_SHORT).show();
     }
 
-    private void setMaxDuration(int millis) {
-        mSeekBar.setMax(millis);
-        mDurationTextView.setText(formatMillisToString(millis));
-    }
-
-    /** Set up media player, prepare, and start playing the song as soon as it's ready. */
-    private void playCurrentTrack() {
-        String songUrl = getSongUrl();
-        mMediaPlayer = setupMediaPlayer(songUrl);
-        prepareMediaPlayer(mMediaPlayer, mStartPlayerListener, mOnCompletionListener);
-    }
-
-    private void pauseOrPlayCurrentTrack() {
-        if (mMediaPlayer == null) {
-            return;
-        }
-
-        if (mMediaPlayer.isPlaying()) {
-            mMediaPlayer.pause();
-        } else {
-            mMediaPlayer.start();
-        }
-
-        setPlayPauseIcon();
-    }
-
-    private MediaPlayer.OnPreparedListener mStartPlayerListener = new MediaPlayer.OnPreparedListener() {
-        @Override
-        public void onPrepared(MediaPlayer mp) {
-            mp.start();
-            setPlayPauseIcon();
-            setMaxDuration(mp.getDuration());
-            mHandler.postDelayed(mUpdateSeekBar, 100);
-
-            mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                @Override
-                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
-                }
-
-                @Override
-                public void onStartTrackingTouch(SeekBar seekBar) {
-
-                }
-
-                @Override
-                public void onStopTrackingTouch(SeekBar seekBar) {
-                    mMediaPlayer.seekTo(seekBar.getProgress());
-                }
-            });
-        }
-    };
-
-    private MediaPlayer.OnCompletionListener mOnCompletionListener = new MediaPlayer.OnCompletionListener() {
-        @Override
-        public void onCompletion(MediaPlayer mp) {
-            nextTrack();
-        }
-    };
-
-    private Runnable mUpdateSeekBar = new Runnable() {
-        @Override
-        public void run() {
-            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
-                int currentPosition = mMediaPlayer.getCurrentPosition();
-                mSeekBar.setProgress(currentPosition);
-                mElapsedTimeTextView.setText(formatMillisToString(currentPosition));
-            }
-            mHandler.postDelayed(this, 100);
-        }
-    };
-
-    /** Get Url of the song preview */
-    private String getSongUrl() {
-        TrackBundle trackPlaying = mTrackList.get(mTrackNowPlaying);
-        return trackPlaying.preview_url;
-    }
-
-    /** Returns a media player with the data source set */
-    private MediaPlayer setupMediaPlayer(String url) {
-        MediaPlayer mediaPlayer = new MediaPlayer();
-
-        try {
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mediaPlayer.setDataSource(url);
-        } catch (IOException ioe) {
-            Log.e(LOG_TAG, "IOException: ", ioe);
-        }
-
-        return mediaPlayer;
-    }
-
-    /** Asynchronously prepares a media player and attaches a listener for when it is ready */
-    private void prepareMediaPlayer(MediaPlayer mediaPlayer, MediaPlayer.OnPreparedListener onPreparedListener, MediaPlayer.OnCompletionListener onCompletionListener) {
-        mediaPlayer.prepareAsync();
-        // Buffering might cause this method to be slow, do not call on UI thread.
-        // Here, prepareAsync() is used and a listener is set for when the data is ready.
-        mediaPlayer.setOnPreparedListener(onPreparedListener);
-        mediaPlayer.setOnCompletionListener(onCompletionListener);
-    }
-
-    private void releaseMediaPlayer(MediaPlayer mediaPlayer) {
-        if (mediaPlayer != null) {
-            mediaPlayer.release();
-            mMediaPlayer = null;
-        }
-    }
-
-    /** Goes to next track. Releases media player and plays new track. */
-    private void nextTrack() {
-        releaseMediaPlayer(mMediaPlayer);
-        incrementTrack(true);
-        bindView();
-    }
-
-    /** Goes to previous track. Releases media player and plays new track */
-    private void previousTrack() {
-        releaseMediaPlayer(mMediaPlayer);
-        incrementTrack(false);
-        bindView();
-    }
-
-    /**
-     * Increment track count up or down, loop back if end is reached. Releases media player.
-     *
-     * @param incrementUp Enter <code>true</code> to increment up, <code>false</code> to increment
-     *                    down.
-     */
-    private void incrementTrack(boolean incrementUp) {
-        int trackListLastIndex = mTrackList.size() - 1;
-
-        if (incrementUp) {
-            mTrackNowPlaying = (mTrackNowPlaying + 1) % mTrackList.size();
-        } else {
-            mTrackNowPlaying = (mTrackNowPlaying - 1) < 0 ? mTrackList.size() - 1 : mTrackNowPlaying - 1;
-        }
-
-        playCurrentTrack();
-    }
-
-    private String formatMillisToString(long millis) {
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis);
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(minutes);
-        return String.format("%02d:%02d", minutes, seconds);
-    }
+//    private void setPlayPauseIcon() {
+//        if (mMediaPlayer.isPlaying()) {
+//            mPlayPauseImageButton.setImageResource(android.R.drawable.ic_media_pause);
+//        } else {
+//            mPlayPauseImageButton.setImageResource(android.R.drawable.ic_media_play);
+//        }
+//    }
+//
+//    private void setMaxDuration(int millis) {
+//        mSeekBar.setMax(millis);
+//        mDurationTextView.setText(MediaPlayerUtilities.formatMillisToString(millis));
+//    }
+//
+//    /** Set up media player, prepare, and start playing the song as soon as it's ready. */
+//    private void playCurrentTrack() {
+//        String songUrl = getSongUrl();
+//        mMediaPlayer = setupMediaPlayer(songUrl);
+//        prepareMediaPlayer(mMediaPlayer, mStartPlayerListener, mOnCompletionListener);
+//    }
+//
+//    private void pauseOrPlayCurrentTrack() {
+//        if (mMediaPlayer == null) {
+//            return;
+//        }
+//
+//        if (mMediaPlayer.isPlaying()) {
+//            mMediaPlayer.pause();
+//        } else {
+//            mMediaPlayer.start();
+//        }
+//
+//        setPlayPauseIcon();
+//    }
+//
+//    private MediaPlayer.OnPreparedListener mStartPlayerListener = new MediaPlayer.OnPreparedListener() {
+//        @Override
+//        public void onPrepared(MediaPlayer mp) {
+//            mp.start();
+//            setPlayPauseIcon();
+//            setMaxDuration(mp.getDuration());
+//            mHandler.postDelayed(mUpdateSeekBar, 100);
+//
+//            mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+//                @Override
+//                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+//
+//                }
+//
+//                @Override
+//                public void onStartTrackingTouch(SeekBar seekBar) {
+//
+//                }
+//
+//                @Override
+//                public void onStopTrackingTouch(SeekBar seekBar) {
+//                    mMediaPlayer.seekTo(seekBar.getProgress());
+//                }
+//            });
+//        }
+//    };
+//
+//    private Runnable mUpdateSeekBar = new Runnable() {
+//        @Override
+//        public void run() {
+//            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+//                int currentPosition = mMediaPlayer.getCurrentPosition();
+//                mSeekBar.setProgress(currentPosition);
+//                mElapsedTimeTextView.setText(MediaPlayerUtilities.formatMillisToString(currentPosition));
+//            }
+//            mHandler.postDelayed(this, 100);
+//        }
+//    };
 
     //endregion
 
-    //region INTERFACE METHODS ===================================================================
-
-    @Override
-    public void onCompletion(MediaPlayer mp) {
-        nextTrack();
-    }
 }
