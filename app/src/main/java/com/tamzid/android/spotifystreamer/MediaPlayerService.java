@@ -6,26 +6,42 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
- * Service to play music. Implemented using http://www.vogella.com/tutorials/AndroidServices/article.html
+ * Service to play one song. Implemented using help of http://www.vogella.com/tutorials/AndroidServices/article.html
  */
 public class MediaPlayerService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener,
         MediaPlayer.OnErrorListener {
     public static final String LOG_TAG = MediaPlayerService.class.getSimpleName();
 
+    public static final String INTENT_MEDIA_PLAYER_SERVICE_BROADCAST = "com.tamzid.android.spotifystreamer.MediaPlayerService.broadcast";
+    public static final String INTENT_MEDIA_PLAYER_SERVICE_IS_PREPARED = "com.tamzid.android.spotifystreamer.MediaPlayerService.isPrepared";
+
     private MediaPlayer mMediaPlayer;
-    public List<TrackBundle> mTrackList;
-    public int mTrackNowPlaying;
+    public boolean mIsPaused;
+    public boolean mIsPrepared;
+
+    private LocalBroadcastManager mBroadcaster;
+
+    private onPlayButtonActiveListener mListener;
+
+    public interface onPlayButtonActiveListener {
+        void onPlayButtonActive();
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mBroadcaster = LocalBroadcastManager.getInstance(this);
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // TODO: do something useful
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     public class MediaPlayerBinder extends Binder {
@@ -53,12 +69,33 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
         super.onDestroy();
     }
 
-    public void playMusic() {
+    public void pauseOrPlayCurrentTrack() {
+        if (mMediaPlayer == null) {
+            return;
+        }
+
+        if (!mIsPrepared) {
+
+        }
+
+        if (mMediaPlayer.isPlaying()) {
+            mMediaPlayer.pause();
+        } else {
+            mMediaPlayer.start();
+        }
+    }
+
+    public boolean mIsMusicPlaying() {
+        return mMediaPlayer != null && mMediaPlayer.isPlaying();
+    }
+
+    /** Public method for the player UI to play music from the service, restarts MediaPlayer if song is switched */
+    public void playMusic(String songUrl) {
         if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+            mMediaPlayer.reset();
             releaseMediaPlayer(mMediaPlayer);
         }
 
-        String songUrl = mTrackList.get(mTrackNowPlaying).preview_url;
         mMediaPlayer = setupMediaPlayer(songUrl);
     }
 
@@ -90,32 +127,24 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
         }
     }
 
-    /** Goes to next track. Releases media player and plays new track. */
-    private void nextTrack() {
-        releaseMediaPlayer(mMediaPlayer);
-        incrementTrack(true);
-//        bindView();
+    public int getMaxDuration() {
+        return (mMediaPlayer == null || !mIsPrepared) ? -1 : mMediaPlayer.getDuration();
     }
 
-    /** Goes to previous track. Releases media player and plays new track */
-    private void previousTrack() {
-        releaseMediaPlayer(mMediaPlayer);
-        incrementTrack(false);
-//        bindView();
+    public int getCurrentPosition() {
+        return (mMediaPlayer == null || !mIsPrepared) ? -1 : mMediaPlayer.getCurrentPosition();
     }
 
-    /**
-     * Increment track count up or down, loop back if end is reached. Releases media player.
-     *
-     * @param incrementUp Enter <code>true</code> to increment up, <code>false</code> to increment
-     *                    down.
-     */
-    private void incrementTrack(boolean incrementUp) {
-        if (incrementUp) {
-            mTrackNowPlaying = (mTrackNowPlaying + 1) % mTrackList.size();
-        } else {
-            mTrackNowPlaying = (mTrackNowPlaying - 1) < 0 ? mTrackList.size() - 1 : mTrackNowPlaying - 1;
+    public void seekTo(int position) {
+        if (mMediaPlayer != null) {
+            mMediaPlayer.seekTo(position);
         }
+    }
+
+    private void sendPreparedBroadcast() {
+        Intent intent = new Intent(INTENT_MEDIA_PLAYER_SERVICE_BROADCAST);
+        intent.putExtra(INTENT_MEDIA_PLAYER_SERVICE_IS_PREPARED, true);
+        mBroadcaster.sendBroadcast(intent);
     }
 
     @Override
@@ -125,11 +154,17 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        Log.e(LOG_TAG, "MediaPlayer returned error");
         return false;
     }
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        mp.start();
+        mIsPrepared = true;
+        sendPreparedBroadcast();
+        if (!mIsPaused) {
+            mp.start();
+        }
     }
+
 }
