@@ -46,6 +46,7 @@ public class PlayerDialogFragment extends DialogFragment {
     public static final String SAVESTATE_MAX_DURATION = "saveStateMaxDuration";
     public static final String SAVESTATE_CURRENT_PROGRESS = "saveStateCurrentProgress";
 
+
     // Fragment initialization parameters
     private static final String ARG_TRACKLIST = "tracklist";
     private static final String ARG_TRACK_NOW_PLAYING = "trackNowPlaying";
