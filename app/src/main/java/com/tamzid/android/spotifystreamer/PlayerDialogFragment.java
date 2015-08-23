@@ -147,6 +147,16 @@ public class PlayerDialogFragment extends DialogFragment {
     }
 
     @Override
+    public void onDestroyView() {
+        // Workaround for tablet to retain Dialog on rotation
+        if (getDialog() != null && getRetainInstance()) {
+            getDialog().setDismissMessage(null);
+        }
+
+        super.onDestroyView();
+    }
+
+    @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
