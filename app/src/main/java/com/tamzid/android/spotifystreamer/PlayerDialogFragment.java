@@ -41,10 +41,10 @@ public class PlayerDialogFragment extends DialogFragment {
 
     // Save instance state
     private static final String SAVESTATE_TRACK_NOW_PLAYING = "savestateTrackNowPlaying";
-    public static final String SAVESTATE_TRACKLIST = "savestateTrackList";
-    public static final String SAVESTATE_IS_MEDIA_PLAYER_SERVICE_BOUND = "saveStateIsMediaPlayerServiceBound";
-    public static final String SAVESTATE_MAX_DURATION = "saveStateMaxDuration";
-    public static final String SAVESTATE_CURRENT_PROGRESS = "saveStateCurrentProgress";
+    private static final String SAVESTATE_TRACKLIST = "savestateTrackList";
+    private static final String SAVESTATE_IS_MEDIA_PLAYER_SERVICE_BOUND = "saveStateIsMediaPlayerServiceBound";
+    private static final String SAVESTATE_MAX_DURATION = "saveStateMaxDuration";
+    private static final String SAVESTATE_CURRENT_PROGRESS = "saveStateCurrentProgress";
 
 
     // Fragment initialization parameters
@@ -72,7 +72,7 @@ public class PlayerDialogFragment extends DialogFragment {
     private TextView mDurationTextView;
     private ImageButton mPlayPauseImageButton;
 
-    private Target mTarget = new Target() {
+    private final Target mTarget = new Target() {
         @Override
         public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
             mAlbumArtImageView.setImageBitmap(bitmap);
@@ -99,7 +99,7 @@ public class PlayerDialogFragment extends DialogFragment {
     private int mMaxDuration = -1;
     private int mCurrentProgress = -1;
 
-    Handler mMediaPlayerServiceHandler = new Handler(Looper.getMainLooper());
+    private final Handler mMediaPlayerServiceHandler = new Handler(Looper.getMainLooper());
 
     /**
      * Create and return a new instance of this fragment.
@@ -398,7 +398,7 @@ public class PlayerDialogFragment extends DialogFragment {
     }
 
     /** Updates the position of the time display and seekbar every 1 second. */
-    Runnable mMusicPlayerUpdaterRunnable = new Runnable() {
+    private final Runnable mMusicPlayerUpdaterRunnable = new Runnable() {
         @Override
         public void run() {
             if (mIsMediaPlayerServiceBound && mMediaPlayerService != null) {

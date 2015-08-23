@@ -16,14 +16,14 @@ import java.io.IOException;
  */
 public class MediaPlayerService extends Service implements MediaPlayer.OnPreparedListener, MediaPlayer.OnCompletionListener,
         MediaPlayer.OnErrorListener {
-    public static final String LOG_TAG = MediaPlayerService.class.getSimpleName();
+    private static final String LOG_TAG = MediaPlayerService.class.getSimpleName();
 
     public static final String INTENT_MEDIA_PLAYER_SERVICE_BROADCAST = "com.tamzid.android.spotifystreamer.MediaPlayerService.broadcast";
     public static final String INTENT_MEDIA_PLAYER_SERVICE_IS_PREPARED = "com.tamzid.android.spotifystreamer.MediaPlayerService.isPrepared";
 
     private MediaPlayer mMediaPlayer;
     public boolean mIsPaused;
-    public boolean mIsPrepared;
+    private boolean mIsPrepared;
 
     private LocalBroadcastManager mBroadcaster;
 
@@ -73,10 +73,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
         } else {
             mMediaPlayer.start();
         }
-    }
-
-    public boolean mIsMusicPlaying() {
-        return mMediaPlayer != null && mMediaPlayer.isPlaying();
     }
 
     /** Public method for the player UI to play music from the service, restarts MediaPlayer if song is switched */

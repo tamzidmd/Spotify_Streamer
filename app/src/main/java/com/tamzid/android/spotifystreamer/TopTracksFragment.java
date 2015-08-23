@@ -35,11 +35,11 @@ import retrofit.client.Response;
 
 /** Displays the top 10 tracks of a chosen artist */
 public class TopTracksFragment extends Fragment {
-    public static final String LOG_TAG = TopTracksFragment.class.getSimpleName();
+    private static final String LOG_TAG = TopTracksFragment.class.getSimpleName();
 
     // Save instance state
     private static final String SAVESTATE_TOPTRACKS = "savestateTopTracks";
-    public static final String SAVESTATE_TRACKLIST = "savestateTrackList";
+    private static final String SAVESTATE_TRACKLIST = "savestateTrackList";
 
     // Arguments
     private static final String ARG_ARTIST_NAME = "com.tamzid.android.spotifystreamer.artistName";
@@ -48,7 +48,7 @@ public class TopTracksFragment extends Fragment {
     // Parameters
     private String mArtistName;
     private String mArtistId;
-    public static final String COUNTRY_CODE = "US";
+    private static final String COUNTRY_CODE = "US";
 
     // Views
     private ListView mListView;
