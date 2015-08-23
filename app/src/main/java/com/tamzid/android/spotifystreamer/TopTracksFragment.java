@@ -88,7 +88,7 @@ public class TopTracksFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-        setRetainInstance(true);
+        //setRetainInstance(true);
         if (getArguments() != null && savedInstanceState == null) {
             mArtistName = getArguments().getString(ARG_ARTIST_NAME);
             mArtistId = getArguments().getString(ARG_ARTIST_ID);

@@ -27,12 +27,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
 
     private LocalBroadcastManager mBroadcaster;
 
-    private onPlayButtonActiveListener mListener;
-
-    public interface onPlayButtonActiveListener {
-        void onPlayButtonActive();
-    }
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -72,10 +66,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
     public void pauseOrPlayCurrentTrack() {
         if (mMediaPlayer == null) {
             return;
-        }
-
-        if (!mIsPrepared) {
-
         }
 
         if (mMediaPlayer.isPlaying()) {
@@ -124,6 +114,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
         if (mediaPlayer != null) {
             mediaPlayer.release();
             mMediaPlayer = null;
+            mIsPrepared = false;
         }
     }
 
@@ -141,6 +132,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
         }
     }
 
+    /** Tells UI controller that the media player is in the prepared state */
     private void sendPreparedBroadcast() {
         Intent intent = new Intent(INTENT_MEDIA_PLAYER_SERVICE_BROADCAST);
         intent.putExtra(INTENT_MEDIA_PLAYER_SERVICE_IS_PREPARED, true);
@@ -165,6 +157,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnPrepare
         if (!mIsPaused) {
             mp.start();
         }
+
     }
 
 }

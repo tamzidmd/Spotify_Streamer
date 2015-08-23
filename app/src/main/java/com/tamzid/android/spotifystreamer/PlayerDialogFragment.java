@@ -1,5 +1,6 @@
 package com.tamzid.android.spotifystreamer;
 
+import android.app.Activity;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.BroadcastReceiver;
@@ -27,7 +28,6 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
@@ -117,6 +117,22 @@ public class PlayerDialogFragment extends DialogFragment {
         return fragment;
     }
 
+    private void loadSavedInstanceState(Bundle savedInstanceState) {
+        mTrackList = savedInstanceState.getParcelableArrayList(SAVESTATE_TRACKLIST);
+        mTrackNowPlaying = savedInstanceState.getInt(SAVESTATE_TRACK_NOW_PLAYING);
+        mIsMediaPlayerServiceBound = savedInstanceState.getBoolean(SAVESTATE_IS_MEDIA_PLAYER_SERVICE_BOUND);
+        mMaxDuration = savedInstanceState.getInt(SAVESTATE_MAX_DURATION);
+        mCurrentProgress = savedInstanceState.getInt(SAVESTATE_CURRENT_PROGRESS);
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        startMediaPlayerService();
+        // Start runnable which manages the seekbar once the service is bound
+        mMediaPlayerServiceHandler.postDelayed(mMusicPlayerUpdaterRunnable, 1000);
+    }
+
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -124,8 +140,7 @@ public class PlayerDialogFragment extends DialogFragment {
         if (savedInstanceState != null && !savedInstanceState.isEmpty()) {
             // If savedInstanceState has data, use it
             Debug.logD(LOG_TAG, "used saveInstanceState");
-            mTrackList = savedInstanceState.getParcelableArrayList(SAVESTATE_TRACKLIST);
-            mTrackNowPlaying = savedInstanceState.getInt(SAVESTATE_TRACK_NOW_PLAYING);
+            loadSavedInstanceState(savedInstanceState);
         }
 
     }
@@ -138,11 +153,8 @@ public class PlayerDialogFragment extends DialogFragment {
         if (savedInstanceState != null && !savedInstanceState.isEmpty()) {
             // If savedInstanceState has data, use it
             Debug.logD(LOG_TAG, "used saveInstanceState");
-            mTrackList = savedInstanceState.getParcelableArrayList(SAVESTATE_TRACKLIST);
-            mTrackNowPlaying = savedInstanceState.getInt(SAVESTATE_TRACK_NOW_PLAYING);
-            mIsMediaPlayerServiceBound = savedInstanceState.getBoolean(SAVESTATE_IS_MEDIA_PLAYER_SERVICE_BOUND);
-            mMaxDuration = savedInstanceState.getInt(SAVESTATE_MAX_DURATION);
-            mCurrentProgress = savedInstanceState.getInt(SAVESTATE_CURRENT_PROGRESS);
+            loadSavedInstanceState(savedInstanceState);
+
         } else if (getArguments() != null) {
             // Otherwise, get it from the argument bundle
             mTrackList = getArguments().getParcelableArrayList(ARG_TRACKLIST);
@@ -152,6 +164,7 @@ public class PlayerDialogFragment extends DialogFragment {
             for (TrackBundle trackBundle : mTrackList) {
                 Log.d(LOG_TAG, "Contains: " + trackBundle.name);
             }
+
         }
 
         mBroadcastReceiver = new BroadcastReceiver() {
@@ -164,12 +177,6 @@ public class PlayerDialogFragment extends DialogFragment {
                 }
             }
         };
-
-
-        startMediaPlayerService();
-
-        // Start runnable which manages the seekbar once the service is bound
-        mMediaPlayerServiceHandler.postDelayed(mMusicPlayerRunnable, 1000);
 
     }
 
@@ -227,6 +234,25 @@ public class PlayerDialogFragment extends DialogFragment {
 
         setPlayPauseIcon();
 
+        mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    seekTo(progress);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
         return v;
     }
 
@@ -259,13 +285,6 @@ public class PlayerDialogFragment extends DialogFragment {
         super.onPause();
     }
 
-    @Override
-    public void onDestroy() {
-//        getActivity().stopService(mPlayMusicIntent);
-//        mMediaPlayerService = null;
-        super.onDestroy();
-    }
-
     //region LOCAL METHODS=========================================================================
 
     /** Binds new data to the views */
@@ -287,10 +306,6 @@ public class PlayerDialogFragment extends DialogFragment {
         }
     }
 
-    private void displayToast(String displayText) {
-        Toast.makeText(getActivity(), displayText, Toast.LENGTH_SHORT).show();
-    }
-
     /** Starts {@link MediaPlayerService} and begins playing with the current song */
     private void startMediaPlayerService() {
         if (mPlayMusicIntent == null && !mIsMediaPlayerServiceBound) {
@@ -308,13 +323,14 @@ public class PlayerDialogFragment extends DialogFragment {
                     mMediaPlayerService.mIsPaused = mIsPlaying;
                     String songUrl = mTrackList.get(mTrackNowPlaying).preview_url;
                     mMediaPlayerService.playMusic(songUrl);
+                    Debug.logD(LOG_TAG, "MediaPlayerService bound");
 
                 }
 
                 @Override
                 public void onServiceDisconnected(ComponentName name) {
                     mIsMediaPlayerServiceBound = false;
-                    Log.d(LOG_TAG, "MediaPlayerService unbound");
+                    Debug.logD(LOG_TAG, "MediaPlayerService unbound");
                 }
             };
 
@@ -323,7 +339,9 @@ public class PlayerDialogFragment extends DialogFragment {
         }
     }
 
+    /** Stops and unbinds the {@link MediaPlayerService}, nullifies all objects and updates flags */
     private void stopMediaPlayerService() {
+        Debug.logD(LOG_TAG, "stopMediaPlayerService called");
         getActivity().getApplicationContext().stopService(mPlayMusicIntent);
         getActivity().getApplicationContext().unbindService(mMediaPlayerServiceConnection);
         mMediaPlayerService = null;
@@ -378,10 +396,11 @@ public class PlayerDialogFragment extends DialogFragment {
         }
     }
 
-    Runnable mMusicPlayerRunnable = new Runnable() {
+    /** Updates the position of the time display and seekbar every 1 second. */
+    Runnable mMusicPlayerUpdaterRunnable = new Runnable() {
         @Override
         public void run() {
-            if (mIsMediaPlayerServiceBound) {
+            if (mIsMediaPlayerServiceBound && mMediaPlayerService != null) {
                 mMaxDuration = mMediaPlayerService.getMaxDuration();
                 mSeekBar.setMax(mMaxDuration);
                 mDurationTextView.setText(MediaPlayerUtilities.formatMillisToString(mMaxDuration));
@@ -396,65 +415,11 @@ public class PlayerDialogFragment extends DialogFragment {
         }
     };
 
-
-
-    //endregion
-
-
-
-//
-//    private void setMaxDuration(int millis) {
-//        mSeekBar.setMax(millis);
-//        mDurationTextView.setText(MediaPlayerUtilities.formatMillisToString(millis));
-//    }
-//
-//    /** Set up media player, prepare, and start playing the song as soon as it's ready. */
-//    private void playCurrentTrack() {
-//        String songUrl = getSongUrl();
-//        mMediaPlayer = setupMediaPlayer(songUrl);
-//        prepareMediaPlayer(mMediaPlayer, mStartPlayerListener, mOnCompletionListener);
-//    }
-//
-
-//
-//    private MediaPlayer.OnPreparedListener mStartPlayerListener = new MediaPlayer.OnPreparedListener() {
-//        @Override
-//        public void onPrepared(MediaPlayer mp) {
-//            mp.start();
-//            setPlayPauseIcon();
-//            setMaxDuration(mp.getDuration());
-//            mHandler.postDelayed(mUpdateSeekBar, 100);
-//
-//            mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-//                @Override
-//                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-//
-//                }
-//
-//                @Override
-//                public void onStartTrackingTouch(SeekBar seekBar) {
-//
-//                }
-//
-//                @Override
-//                public void onStopTrackingTouch(SeekBar seekBar) {
-//                    mMediaPlayer.seekTo(seekBar.getProgress());
-//                }
-//            });
-//        }
-//    };
-//
-//    private Runnable mUpdateSeekBar = new Runnable() {
-//        @Override
-//        public void run() {
-//            if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
-//                int currentPosition = mMediaPlayer.getCurrentPosition();
-//                mSeekBar.setProgress(currentPosition);
-//                mElapsedTimeTextView.setText(MediaPlayerUtilities.formatMillisToString(currentPosition));
-//            }
-//            mHandler.postDelayed(this, 100);
-//        }
-//    };
+    private void seekTo(int position) {
+        if (mIsMediaPlayerServiceBound) {
+            mMediaPlayerService.seekTo(position);
+        }
+    }
 
     //endregion
 }
